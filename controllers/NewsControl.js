@@ -19,8 +19,8 @@ export const createNews = async (req, res) => {
             title: req.body.title,
             text: req.body.text,
             imageUrl: req.body.imageUrl,
-            tags: req.body.tags,
-            user: req.userId,
+            // tags: req.body.tags,
+            // user: req.userId,
         });
 
         const news = await doc.save();
@@ -75,8 +75,8 @@ export const updateNews = async (req, res) => {
             title: req.body.title,
             text: req.body.text,
             imageUrl: req.body.imageUrl,
-            tags: req.body.tags,
-            user: req.userId,
+            // tags: req.body.tags,
+            // user: req.userId,
         });
 
         res.json({
@@ -89,3 +89,26 @@ export const updateNews = async (req, res) => {
         });
     }
 }
+
+export const getOneNews = async (req, res) => {
+    try {
+        const newsId = req.params.id;
+        const doc = await NewsModel.findOneAndUpdate(
+            { _id: newsId },
+            { returnDocument: 'after' }
+        ).exec();
+
+        if (!doc) {
+            return res.status(404).json({
+                message: 'новость не найдена'
+            });
+        }
+
+        res.json(doc);
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({
+            message: 'Не удалось получить новость',
+        });
+    }
+};

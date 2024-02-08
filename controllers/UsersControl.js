@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
-import { validationResult } from "express-validator"
 import UserModel from "../models/User.js"
 
 export const autorization = async (req, res) => {
@@ -46,12 +45,6 @@ export const autorization = async (req, res) => {
 
 export const registration = async (req, res) => {
     try {
-        //спарсим ошибки, если таковы имеются
-        const errors = validationResult(req);
-        if(!errors.isEmpty()){
-            return res.status(400).json(errors.array());
-        }
-
         const password = req.body.password;
         const salt = await bcrypt.genSalt(10); //способ шифрования
         const hash = await bcrypt.hash(password, salt); //создаем из обычной строки по алгоритма salt зашифрованный пароль
