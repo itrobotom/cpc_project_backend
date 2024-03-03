@@ -4,13 +4,15 @@ import mongoose from "mongoose"
 
 import cors from 'cors'
 
-import { regValidation, autorizationValidation, newsCreateValidation } from "./validations/validations.js"
+import { regValidation, autorizationValidation, newsCreateValidation, programCreateValidation } from "./validations/validations.js"
 
 import checkAuth from "./middleware/checkAuth.js"
 
 import { autorization, registration, getMeInfo } from "./controllers/UsersControl.js"
 
 import { createNews, getAllNews, deleteNews, updateNews, getOneNews } from "./controllers/NewsControl.js"
+
+import { createProgram, getAllPrograms, deleteProgram, updateProgram, getOneProgram, deleteFileHandler, deletePhotoHandler } from "./controllers/ProgramControl.js"
 
 import validationErrReq from "./middleware/validationErrReq.js"
 
@@ -25,24 +27,6 @@ const PORT = 5000;
 const app = express();
 app.use(express.json());
 app.use(cors()); //добавляем для снятия запрета делать запросы на сервер с других доменов
-
-app.use('/uploads', express.static('uploads')); //ждем get запрос на получение статичного файла
-
-//создаем хранилище
-const storage = multer.diskStorage({
-    destination: (_, __, callback) => { //функция, которая указывает, куда будем сохранять статические файлы от клиента (нужно создать в корне проекта папку uploads)
-        callback(null, 'uploads');
-    },
-    filename: (_, file, callback) => { //задаем название файла, вытаскиваем его из самого файла file.originalname
-        callback(null, file.originalname);
-    },
-});
-
-const upload = multer({ storage })
-
-
-
-
 
 //реагиреум на запрос по корневому адресу (клиент получает данные с сервера - get запрос)
 app.get('/', (req, res) => {
@@ -63,13 +47,114 @@ app.get('/auth/me', checkAuth, getMeInfo);
 //запрос на создание новости
 app.post('/news', checkAuth, newsCreateValidation, validationErrReq, createNews);
 
-//запрос на загрузку файла (используя мидлвэйр checkAuth, чтобы кто угодно не мог загрузить картинку)
-app.post('/upload', checkAuth, upload.single('image'), (req, res) => { //ожидаем файл картинку с указанием типа image (с другим имененем не загрузится)
-    res.json({ //возращаем клиенту ссылку на эту картинку 
-        url: `/uploads/${req.file.originalname}`, //в req будет хрантитсья информация о загружаемом файле т.к. upload по сути хранилище, которые выше создавали
-    })
-}); 
+//запрос на создание программы
+app.post('/program', checkAuth, programCreateValidation, validationErrReq, createProgram);
 
+app.use('/uploads', express.static('uploads')); //ждем get запрос на получение статичного файла
+//создаем хранилище
+const storage = multer.diskStorage({
+    destination: (req, file, callback) => {
+        let folder = 'uploads/newsImage'; // По умолчанию загружаем изображения сюда (в фото новостей)
+        if (req.url === '/uploads_news_image_poster') { // Если URL соответствует загрузке постера, сохраняем в другую папку
+            folder = 'uploads/postersPrograms';
+        }
+        else if(req.url === '/uploads_file_program') {
+            folder = 'uploads/programFile';
+        }
+        else if(req.url === '/uploads_image_program') {
+            folder = 'uploads/programImage';
+        }
+        callback(null, folder);
+    },
+    filename: (_, file, callback) => {
+        callback(null, file.originalname);
+    },
+});
+
+const upload = multer({ storage }); // Создаем экземпляр multer с хранилищем
+
+//запрос на загрузку изображения для новости (используя мидлвэйр checkAuth, чтобы кто угодно не мог загрузить картинку)
+app.post('/uploads_news_image', checkAuth, upload.single('image'), async (req, res) => { // тип загружаемых файлов 'image' 
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не был загружен' });
+        }
+        // Здесь можно добавить код для проверки размера файла и его обработки, пока реализовал на фронтеде
+        res.json({
+            url: `/uploads/newsImage/${req.file.originalname}`,//originalname - имя пришедшее с фронтеда (там оно генерируется уникальным)
+        });
+    } catch (error) {
+        console.error('Ошибка при загрузке и обработке изображения:', error);
+        res.status(500).json({ error: 'Произошла ошибка при загрузке и обработке изображения' });
+    }
+});
+
+//удаление фото новости
+app.delete('/uploads/newsImage/:fileName', checkAuth, (req, res) => deletePhotoHandler(req, res, "newsImage"));
+
+//запрос на загрузку изображения постера образовательной программы (используя мидлвэйр checkAuth, чтобы кто угодно не мог загрузить картинку)
+app.post('/uploads_news_image_poster', checkAuth, upload.single('image'), async (req, res) => { // тип загружаемых файлов 'image' 
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не был загружен' });
+        }
+        // Здесь можно добавить код для проверки размера файла и его обработки, пока реализовал на фронтеде
+        res.json({
+            url: `/uploads/postersPrograms/${req.file.originalname}`,//originalname - имя пришедшее с фронтеда (там оно генерируется уникальным)
+        });
+    } catch (error) {
+        console.error('Ошибка при загрузке и обработке изображения:', error);
+        res.status(500).json({ error: 'Произошла ошибка при загрузке и обработке изображения' });
+    }
+});
+
+//запрос на загрузку изображения для образовательной программы
+app.post('/uploads_image_program', checkAuth, upload.single('image'), async (req, res) => { // тип загружаемых файлов 'image' 
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не был загружен' });
+        }
+        // Здесь можно добавить код для проверки размера файла и его обработки, пока реализовал на фронтеде
+        res.json({
+            url: `/uploads/programImage/${req.file.originalname}`,//originalname - имя пришедшее с фронтеда (там оно генерируется уникальным)
+        });
+    } catch (error) {
+        console.error('Ошибка при загрузке и обработке изображения:', error);
+        res.status(500).json({ error: 'Произошла ошибка при загрузке и обработке изображения' });
+    }
+});
+
+
+//запрос на загрузку файла образовательной программы
+app.post('/uploads_file_program', checkAuth, upload.single('file'), async (req, res) => { // тип загружаемых файлов 'file' 
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не был загружен' });
+        }
+        // Здесь можно добавить код для проверки размера файла и его обработки, пока реализовал на фронтеде
+        res.json({
+            url: `/uploads/programFile/${req.file.originalname}`,//originalname - имя пришедшее с фронтеда (там оно генерируется уникальным)
+        });
+    } catch (error) {
+        console.error('Ошибка при загрузке и обработке файла:', error);
+        res.status(500).json({ error: 'Произошла ошибка при загрузке и обработке файла' });
+    }
+});
+
+//удаление файла
+//app.delete('/addProgram/:fileName', checkAuth, deleteFileHandler);
+app.delete('/uploads/programFile/:fileName', checkAuth, deleteFileHandler);
+
+//удаление постера
+app.delete('/uploads/postersPrograms/:fileName', checkAuth, (req, res) => deletePhotoHandler(req, res, "postersPrograms"));
+
+//удаление фото к программе
+app.delete('/uploads/programImage/:fileName', checkAuth, (req, res) => deletePhotoHandler(req, res, "programImage"));
+
+
+
+
+//НОВОСТИ
 //получение всех новостей
 app.get('/news', getAllNews); 
 

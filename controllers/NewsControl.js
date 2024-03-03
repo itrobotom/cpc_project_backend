@@ -2,7 +2,9 @@ import NewsModel from '../models/News.js'
 
 export const getAllNews = async (req, res) => {
     try {
-        const news = await NewsModel.find(); //получить все доступные новости из модели 
+        //const news = await NewsModel.find(); //получить все доступные новости из модели 
+        const news = await NewsModel.find().sort({ dateNewsFormat: -1 }); //чтобы получили данные в нужном хронологическом порядке
+        console.log("Отправляем новости ", news);
         res.json(news); 
     } catch(err) {
         console.log(err);
@@ -19,7 +21,11 @@ export const createNews = async (req, res) => {
             title: req.body.title,
             text: req.body.text,
             imageUrl: req.body.imageUrl,
-            // tags: req.body.tags,
+            typesProgramStore: req.body.typesProgramStore,
+            dateNewsFormat: req.body.dateNewsFormat,
+            linkProgramm: req.body.linkProgramm,
+            linkNews: req.body.linkNews,
+            programName: req.body.programName,
             // user: req.userId,
         });
 
@@ -64,6 +70,7 @@ export const deleteNews = async (req, res) => {
 };
 
 export const updateNews = async (req, res) => {
+    //console.log("Пришел для обновления новости объект: ", req);
     try {
         const newsId = req.params.id;
 
@@ -72,11 +79,16 @@ export const updateNews = async (req, res) => {
             _id: newsId, //ищем статью по id
         }, //далее что будем записывать нового в поля (тоже самое по сути, что и при создании статьи с нуля)
         {
-            title: req.body.title,
-            text: req.body.text,
-            imageUrl: req.body.imageUrl,
-            // tags: req.body.tags,
-            // user: req.userId,
+            $set: { //добавлен set для корректного обновления с учетом поле даты события dateNewsFormat
+                title: req.body.title,
+                text: req.body.text,
+                imageUrl: req.body.imageUrl,
+                typesProgramStore: req.body.typesProgramStore,
+                dateNewsFormat: req.body.dateNewsFormat,
+                linkProgramm: req.body.linkProgramm,
+                linkNews: req.body.linkNews,
+                programName: req.body.programName,
+            }
         });
 
         res.json({
