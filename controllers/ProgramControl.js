@@ -4,16 +4,53 @@ import path from 'path';
 
 export const getAllPrograms = async (req, res) => {
     try {
-        //const news = await NewsModel.find(); //получить все доступные новости из модели 
-        const programs = await ProgramModel.find().sort({ dateNewsFormat: -1 }); //чтобы получили данные в нужном хронологическом порядке
-        console.log("Отправляем новости ", programs);
+        let programs;
+
+        if (req.isAuthenticated) { // Используем isAuthenticated для проверки авторизации
+            programs = await ProgramModel.find(); // Если пользователь авторизован, возвращаем все данные, включая почту педагога
+        } else {
+            programs = await ProgramModel.find().select('-instructors.email'); // Если пользователь не авторизован, исключаем почту педагога
+        }
+        
         res.json(programs); 
     } catch(err) {
         console.log(err);
         res.status(500).json({
-            message: 'Не удалось получить новости',
+            message: 'Не удалось получить программы',
         })
+    }
+};
 
+export const getOneProgram = async (req, res) => {
+    try {
+        const programId = req.params.id;
+        let program;
+        if (req.isAuthenticated) { // Используем isAuthenticated для проверки авторизации
+            program = await ProgramModel.findOneAndUpdate(
+                { _id: programId },
+                { returnDocument: 'after' }
+            ).lean().exec();
+        } else {
+            program = await ProgramModel.findOneAndUpdate(
+                { _id: programId },
+                { returnDocument: 'after' }
+            ).lean().exec();
+            // Исключаем почту педагога из ответа, поскольку пользователь не авторизован 
+            program.instructors.forEach(instructor => {
+                delete instructor.email;
+            });
+        }
+        if (!program) {
+            return res.status(404).json({
+                message: 'Программа не найдена'
+            });
+        }
+        res.json(program);
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({
+            message: 'Не удалось получить программу',
+        });
     }
 };
 
@@ -24,6 +61,8 @@ export const createProgram = async (req, res) => {
             typesProgram: req.body.typesProgram,
             titleProgram: req.body.titleProgram,
             shortTitleProgram: req.body.shortTitleProgram,
+            numLessons: req.body.numLessons,
+            trainingPeriod: req.body.trainingPeriod,
             linkVideo: req.body.linkVideo,
             commentVideo: req.body.commentVideo,
             linkGroup: req.body.linkGroup,
@@ -95,6 +134,8 @@ export const updateProgram = async (req, res) => {
                 typesProgram: req.body.typesProgram,
                 titleProgram: req.body.titleProgram,
                 shortTitleProgram: req.body.shortTitleProgram,
+                numLessons: req.body.numLessons,
+                trainingPeriod: req.body.trainingPeriod,
                 linkVideo: req.body.linkVideo,
                 commentVideo: req.body.commentVideo,
                 linkGroup: req.body.linkGroup,
@@ -121,29 +162,6 @@ export const updateProgram = async (req, res) => {
         });
     }
 }
-
-export const getOneProgram = async (req, res) => {
-    try {
-        const programId = req.params.id;
-        const doc = await ProgramModel.findOneAndUpdate(
-            { _id: programId },
-            { returnDocument: 'after' }
-        ).exec();
-
-        if (!doc) {
-            return res.status(404).json({
-                message: 'программа не найдена'
-            });
-        }
-
-        res.json(doc);
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({
-            message: 'Не удалось получить программу',
-        });
-    }
-};
 
 
 // Функция для удаления файла

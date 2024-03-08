@@ -1,8 +1,7 @@
 import mongoose from "mongoose"
 //модель Образовательной программы 
-//добавить ссылку на загруженную программу
-//добавить массив ссылок на изображения с процесса обучения
-//события по результатам освоения программы (массив объектов: комментарий: ссылка на пост в соцсетях или на нужный ресурс, как с добавленем педагогов)
+//добавить количество занятий в неделю
+//добавить срок обучения
 const ProgramSchema = new mongoose.Schema(
     {
         typesProgramKlimov:{
@@ -19,6 +18,12 @@ const ProgramSchema = new mongoose.Schema(
             required: true,
         },
         shortTitleProgram: {
+            type: String,
+        },
+        numLessons: {
+            type: String,
+        },
+        trainingPeriod: {
             type: String,
         },
         linkVideo: {

@@ -8,6 +8,8 @@ import { regValidation, autorizationValidation, newsCreateValidation, programCre
 
 import checkAuth from "./middleware/checkAuth.js"
 
+import { checkAuthEmail } from "./middleware/checkAuthEmail.js"
+
 import { autorization, registration, getMeInfo } from "./controllers/UsersControl.js"
 
 import { createNews, getAllNews, deleteNews, updateNews, getOneNews } from "./controllers/NewsControl.js"
@@ -44,11 +46,20 @@ app.post('/auth/register', regValidation, validationErrReq, registration);
 //запрос на получение информации о себе
 app.get('/auth/me', checkAuth, getMeInfo);
 
-//запрос на создание новости
-app.post('/news', checkAuth, newsCreateValidation, validationErrReq, createNews);
-
 //запрос на создание программы
 app.post('/program', checkAuth, programCreateValidation, validationErrReq, createProgram);
+
+//получение всех программ
+app.get('/programs', checkAuthEmail, getAllPrograms); 
+
+//получение одной программы по id
+app.get('/programs/:id', checkAuthEmail, getOneProgram);
+
+//удаление одной программы (для редактирования, поэтому проверка авторизации)
+app.delete('/program/:id', checkAuth, deleteProgram);
+
+//редактирование программы
+app.patch('/program/:id', checkAuth, programCreateValidation, updateProgram);
 
 app.use('/uploads', express.static('uploads')); //ждем get запрос на получение статичного файла
 //создаем хранилище
@@ -89,8 +100,6 @@ app.post('/uploads_news_image', checkAuth, upload.single('image'), async (req, r
     }
 });
 
-//удаление фото новости
-app.delete('/uploads/newsImage/:fileName', checkAuth, (req, res) => deletePhotoHandler(req, res, "newsImage"));
 
 //запрос на загрузку изображения постера образовательной программы (используя мидлвэйр checkAuth, чтобы кто угодно не мог загрузить картинку)
 app.post('/uploads_news_image_poster', checkAuth, upload.single('image'), async (req, res) => { // тип загружаемых файлов 'image' 
@@ -155,11 +164,17 @@ app.delete('/uploads/programImage/:fileName', checkAuth, (req, res) => deletePho
 
 
 //НОВОСТИ
+//запрос на создание новости
+app.post('/news', checkAuth, newsCreateValidation, validationErrReq, createNews);
+
 //получение всех новостей
 app.get('/news', getAllNews); 
 
-//удаление одной новости
+//удаление одной новости (для редактирования, поэтому проверка авторизации)
 app.delete('/news/:id', checkAuth, deleteNews);
+
+//удаление фото новости
+app.delete('/uploads/newsImage/:fileName', checkAuth, (req, res) => deletePhotoHandler(req, res, "newsImage"));
 
 //редактирование новости
 app.patch('/news/:id', checkAuth, newsCreateValidation, updateNews);

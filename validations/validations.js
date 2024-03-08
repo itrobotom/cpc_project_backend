@@ -28,6 +28,8 @@ export const programCreateValidation = [
     body('typesProgram', 'Отметьте подходщие пункты по стандартной специализации').isArray(),
     body('titleProgram', 'Введите название образовательной программы').isLength({ min: 3 }).isString(),
     body('shortTitleProgram', 'Введите сокращенное название образовательной программы').isLength({ min: 3 }).isString(),
+    body('numLessons', 'Неверный формат количества занятий.').optional().isString(),
+    body('trainingPeriod', 'Неверный формат периода обучения.').optional().isString(),
     body('linkVideo', 'Неверный формат ссылки на видео.').optional().isString(),
     body('commentVideo', 'Неверный формат комментария.').optional().isString(),
     body('linkGroup', 'Неверный формат ссылки на группу.').optional().isString(),
